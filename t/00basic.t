@@ -15,8 +15,11 @@ is-deeply $status, 0, "normal status";
 my pdf_domain_t $domain = LibGnuPDF::pdf_error_get_domain($pdf_stat);
 is-deeply $domain, 0, "normal domain";
 
-my $message = LibGnuPDF::pdf_error_get_message($pdf_stat);
-is-deeply $message.deref[0], 0, "no error message";
+is LibGnuPDF::pdf_stm_supported_filter_p(PDF_STM_FILTER_AHEX_ENC), 1, 'AHEX_ENC is supported';
+is LibGnuPDF::pdf_stm_supported_filter_p(PDF_STM_FILTER_AHEX_DEC), 1, 'AHEX_DEC is supported';
+is LibGnuPDF::pdf_stm_supported_filter_p(PDF_STM_FILTER_PRED_ENC), 1, 'PRED_ENC is supported';
+is LibGnuPDF::pdf_stm_supported_filter_p(PDF_STM_FILTER_DCT_ENC), 0, 'DCT_ENC is not supported';
+is LibGnuPDF::pdf_stm_supported_filter_p(PDF_STM_FILTER_DCT_DEC), 1, 'DCT_DEC is supported';
 
 done-testing;
 
