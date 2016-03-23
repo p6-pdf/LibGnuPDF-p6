@@ -29,19 +29,17 @@ my CArray[pdf_size_t] $bytes .= new;
 $bytes[0] = 0;
 pdf_stm_read($enc-stm, $buf-enc, $buf-enc.elems-1, $bytes, $pdf-stat);
 is $bytes[0], 25, "encoded length";
-my Str $encoded = buf8.new( $buf-enc[0 ..^ $bytes[0]] ).decode("latin-1");
+my Str $encoded = buf8.new( $buf-enc.head($bytes[0]) ).decode("latin-1");
 is $encoded, "68656C6C6F20776F726C6421>", "encoded";
 
-my $dec-stm = pdf_stm_mem_new($buf-enc, $bytes[0],
-			  PDF_STM_DEFAULT_CACHE_SIZE, PDF_STM_READ,
-			  $pdf-stat);
+my $dec-stm = pdf_stm_mem_new($buf-enc, $bytes[0], 0, PDF_STM_READ, $pdf-stat);
 
 ok pdf_stm_install_filter($dec-stm, PDF_STM_FILTER_AHEX_DEC, $hash, $pdf-stat), 'install dec filter';
 
 my CArray[pdf_uchar_t] $buf-dec .= new;
 $buf-dec[100] = 0;
 pdf_stm_read($dec-stm, $buf-dec, $buf-dec.elems-1, $bytes, $pdf-stat);
-my Str $decoded = buf8.new( $buf-dec[0 ..^ $bytes[0]] ).decode("latin-1");
+my Str $decoded = buf8.new( $buf-dec.head($bytes[0]) ).decode("latin-1");
 is $decoded, "hello world!", 'decoded';
 
 done-testing;

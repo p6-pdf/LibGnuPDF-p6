@@ -1,16 +1,20 @@
 perl6-LibGnuPDF
 ----------------
-This package contains bindings to the GnuPDF Library
+This package contains:
 
-At this stage, it concentrates on exposing Stream Filter and Encryption functionality
+-- LibGnuPDF -  low level bindings to the GnuPDF Library.
+-- LibGnuPDF::Filter - implements a set of filter classess, compatible with PDF::Storage::Filter from the PDF::Tools distrivution
+-- LibGnuPDF::Crypt - implements encryption and decryption objects, compatible with PDF::Storage::Crypt
+-- LibGnuPDF::Dict - binds Perl6 dictionaries to GnuPDF hashes
+
+At this stage, this module concentrates on exposing Stream Filter and Encryption functionality
 the aim of boosting PDF-tools performance.
 
 ```
-use LibGnuPDF;
-my Str $in = 'Man is distinguished, not only by his reason, but by this singular passion from other animals, which is a lust of the mind, that by a perseverance of delight in the continued and indefatigable generation of knowledge, exceeds the short vehemence of any carnal pleasure.';
-
-my buf8 $a85-encoded = pdf_stm_f_a85enc_get($in.encode("latin-1"));
-my buf8 $a85-decoded = pdf_stm_f_a85enc_get($a85-encoded);
-
-say a85-encoded.decode("latin-1");
+use LibGnuPDF::Filter;
+my %dict = ( :Filter[ASCIIHexDecode Flate],
+             :DecodeParms[ {}, { :BitsPerComponent(4), :Predictor(10), :Colors(3) } ],
+    );
+my $decoded = '100 100 Td (Hello, world!) Tj';
+my $encoded = LibGnuPDF::Filter.encode($decoded, :%dict);
 ```
