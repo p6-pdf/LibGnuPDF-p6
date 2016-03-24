@@ -6,9 +6,6 @@ use NativeCall;
 my pdf_hash_t $hash;
 my pdf_error_t $pdf-stat;
 
-lives-ok {$hash = pdf_hash_new($pdf-stat)}, 'pdf_hash_new - lives';
-isa-ok $hash, pdf_hash_t;
-
 is pdf_stm_supported_filter_p(PDF_STM_FILTER_AHEX_ENC), 1, 'AHEX_ENC is supported';
 is pdf_stm_supported_filter_p(PDF_STM_FILTER_AHEX_DEC), 1, 'AHEX_DEC is supported';
 is pdf_stm_supported_filter_p(PDF_STM_FILTER_PRED_ENC), 1, 'PRED_ENC is supported';
@@ -32,13 +29,13 @@ is $bytes[0], 25, "encoded length";
 my Str $encoded = buf8.new( $buf-enc.head($bytes[0]) ).decode("latin-1");
 is $encoded, "68656C6C6F20776F726C6421>", "encoded";
 
-my $dec-stm = pdf_stm_mem_new($buf-enc, $bytes[0], 0, PDF_STM_READ, $pdf-stat);
+my $dec-stm = pdf-check(&pdf_stm_mem_new, $buf-enc, $bytes[0], 0, PDF_STM_READ);
 
-ok pdf_stm_install_filter($dec-stm, PDF_STM_FILTER_AHEX_DEC, $hash, $pdf-stat), 'install dec filter';
+ok pdf-check(&pdf_stm_install_filter, $dec-stm, PDF_STM_FILTER_AHEX_DEC, $hash), 'install dec filter';
 
 my CArray[pdf_uchar_t] $buf-dec .= new;
 $buf-dec[100] = 0;
-pdf_stm_read($dec-stm, $buf-dec, $buf-dec.elems-1, $bytes, $pdf-stat);
+pdf-check(&pdf_stm_read, $dec-stm, $buf-dec, $buf-dec.elems-1, $bytes);
 my Str $decoded = buf8.new( $buf-dec.head($bytes[0]) ).decode("latin-1");
 is $decoded, "hello world!", 'decoded';
 
