@@ -33,7 +33,15 @@ ok pdf-check(&pdf_stm_install_filter, $dec-stm, PDF_STM_FILTER_PRED_DEC, $decode
 my CArray[pdf_uchar_t] $buf-dec .= new;
 $buf-dec[100] = 0;
 pdf-check(&pdf_stm_read, $dec-stm, $buf-dec, $buf-dec.elems-1, $bytes);
-my Str $decoded = buf8.new( $buf-dec.head($bytes[0]) ).decode("latin-1");
+my $decoded = buf8.new( $buf-dec.head($bytes[0]) ).decode("latin-1");
 is $decoded, "hello world!", 'decoded';
+
+my $input = '100 100 Td (Hello, world!) Tj';
+my %dict = ( :Filter['ASCIIHexDecode',], );
+my $encoded = LibGnuPDF::Filter.encode( $input, :%dict );
+isnt $encoded.decode('latin-1'), $input, 'encoding sanity';
+
+$decoded = LibGnuPDF::Filter.decode( $encoded, :%dict );
+is $decoded.decode('latin-1'), $input, 'decoding sanity';
 
 done-testing;
