@@ -28,7 +28,7 @@ module LibGnuPDF::Object {
 	die "unable to handle has key value: {$val.perl}";
     }
 
-    our sub to-pdf-hash(Hash $h) {
+    our sub to-pdf-hash(Hash $h) is export(:subs, :DEFAULT) {
 	my pdf_hash_t $pdf-hash = pdf-check(&pdf_hash_new);
 	for $h.keys {
 	    add-key($pdf-hash, $_, $h{$_});

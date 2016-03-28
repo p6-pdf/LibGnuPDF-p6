@@ -2,11 +2,11 @@ use v6;
 
 class LibGnuPDF::Filter {
 
-    use LibGnuPDF :types, :subs;
-    use LibGnuPDF::Object :subs;
     use NativeCall;
+    use LibGnuPDF::Object :subs;
+    use LibGnuPDF :types, :subs;
 
-    has pdf_stm_t $.filter is required;
+    has pdf_stm_t $.stream is required;
 
     method filter-spec( Str $filter-name is copy ) {
 
@@ -72,27 +72,25 @@ class LibGnuPDF::Filter {
 	my $spec = $.filter-spec( $dict<Filter> );
 	die "unsupported encoding filter: $dict<Filter>"
 	    unless $spec<can-enc>;
-	my pdf_hash_t $params = $dict<DecodeParms>:exists
-				  ?? LibGnuPDF::Object::to-hash( $dict<DecodeParms> )
-				  !! pdf-check(&pdf_hash_new);
-	pdf-check(&pdf_stm_install_filter, $.filter, $spec<enc>, $params);
-	if $spec<predictor> && $dict<DecodeParms> && $dict<DecodeParms><Predictor> {
-	    pdf-check(&pdf_stm_install_filter, $.filter, PDF_STM_FILTER_PRED_ENC, $params);
-	}
+
+	$.predictor-filters( :!decode, |%($dict<DecodeParams>) )
+	    if $spec<predictors> && $dict<DecodeParms>;
+	pdf-check(&pdf_stm_install_filter, $.stream, $spec<enc>, pdf_hash_t);
     }
 
-    method encoded(CArray $input) {
+    method convert {
 	my buf8 $out .= new;
 	my $buf = CArray[pdf_uchar_t].new;
         $buf[1024] = 0;
 	my $bytes = CArray[pdf_size_t].new;
 	$bytes[0] = 0;
-my UInt $more = 1;
-	do {
-	    $more = pdf-check(&pdf_stm_read, $!filter, $buf, $buf.elems-1, $bytes);
+	my pdf_bool_t $more = 1;
+	repeat {
+	    $more = pdf-check(&pdf_stm_read, $!stream, $buf, $buf.elems-1, $bytes);
+	    warn "more:$more bytes:$bytes[0]";
 	    $out.append: $buf.head($bytes[0])
 		if $bytes[0];
-	}
+	} while $more;
 	$out;
     }
 	
@@ -102,23 +100,45 @@ my UInt $more = 1;
         # nothing to do
         $input;
     }
-    multi method encode(Str $input, |c) {
-	warn :$input.perl;
-	my $buffer = CArray[pdf_uchar_t].new( $input.encode("latin-1" ));
-	$.encode($buffer, |c);
+    
+    multi method mem-stream(Str $input) {
+	$.mem-stream($input.encode("latin-1" ));
+    }
+
+    multi method mem-stream(Blob $input) {
+	$.mem-stream( CArray[pdf_uchar_t].new( $input ));
+    }
+    
+    multi method mem-stream( CArray $input) {
+	pdf-check(&pdf_stm_mem_new,
+		  $input, $input.elems,
+		  0, PDF_STM_READ);
+    }
+
+    multi method predictor-filters(
+	Bool :$decode = False,
+	UInt :$Predictor!,           #| predictor function
+        UInt :$Columns = 1,          #| number of samples per row
+        UInt :$Colors = 1,           #| number of colors per sample
+        UInt :$BitsPerComponent = 8, #| number of bits per color
+    ) {
+						
+	my pdf_hash_t $params = to-pdf-hash({
+	    :$Predictor, :$Columns, :$Colors, :$BitsPerComponent
+	});
+	my $filter = $decode ?? PDF_STM_FILTER_PRED_DEC !! PDF_STM_FILTER_PRED_ENC;
+	pdf-check(&pdf_stm_install_filter, $.stream, $filter, $params);
+    }
+    multi method predictor-filters(%*opt) is default {
     }
 
     multi method encode( $input, Hash :$dict! ) {
-	my $filter = pdf-check(&pdf_stm_mem_new,
-			       $input, $input.elems,
-			       0, PDF_STM_READ);
-
-	my $obj = self.new(:$filter);
+	my $stream = $.mem-stream( $input );
+	my $obj = self.new(:$stream);
 	$obj.encode-filters( :$dict );
-	$obj.encoded($input);
+	$obj.convert;
     }
 
-    #----
     multi method decode-filters( Hash :$dict! where .<Filter>.isa(List)) {
 	if $dict<DecodeParms>:exists {
             die "Filter array {.<Filter>} does not have a corresponding DecodeParms array"
@@ -141,53 +161,35 @@ my UInt $more = 1;
 	my $spec = $.filter-spec( $dict<Filter> );
 	die "unsupported decoding filter: $dict<Filter>"
 	    unless $spec<can-dec>;
-	my pdf_hash_t $params = $dict<DecodeParms>:exists
-				  ?? LibGnuPDF::Object::to-hash( $dict<DecodeParms> )
-				  !! pdf-check(&pdf_hash_new);
-	if $spec<predictor> && $dict<DecodeParms> && $dict<DecodeParms><Predictor> {
-	    pdf-check(&pdf_stm_install_filter, $.filter, PDF_STM_FILTER_PRED_DEC, $params);
-	}
-	pdf-check(&pdf_stm_install_filter, $.filter, $spec<dec>, $params);
+
+	pdf-check(&pdf_stm_install_filter, $.stream, $spec<dec>, pdf_hash_t);
+	$.predictor-filters( :decode, |%($dict<DecodeParms>) )
+	    if $spec<predictors> && $dict<DecodeParms>;
     }
 
-    method decoded(CArray $input) {
-	my buf8 $out .= new;
-	my $buf = CArray[pdf_uchar_t].new;
-        $buf[1024] = 0;
-	my $bytes = CArray[pdf_size_t].new;
-	$bytes[0] = 0;
-	my UInt $more = 1;
-	do {
-	    $more = pdf-check(&pdf_stm_read, $!filter, $buf, $buf.elems-1, $bytes);
-	    $out.append: $buf.head($bytes[0])
-		if $bytes[0];
-	}
-	$out;
-    }
-	
     proto method decode($, Hash :$dict!) {*}
 
     multi method decode( $input, Hash :$dict! where !.<Filter>.defined) {
         # nothing to do
         $input;
     }
-    multi method decode(Str $input, |c) {
-	$.decode( $input.decode("latin-1"), |c);
-    }
-    multi method decode(Buf $input, |c) {
-	warn :$input.perl;
-	my $buffer = CArray[pdf_uchar_t].new( $input );
-	$.decode($buffer, |c);
-    }
 
     multi method decode( $input, Hash :$dict! ) {
-	my $filter = pdf-check(&pdf_stm_mem_new,
-			       $input, $input.elems,
-			       0, PDF_STM_READ);
-
-	my $obj = self.new(:$filter);
+	my $stream = $.mem-stream($input);
+	my $obj = self.new(:$stream);
 	$obj.decode-filters( :$dict );
-	$obj.decoded($input);
+	$obj.convert;
+    }
+
+    method prediction( $input, Bool :$decode = False, |c ) {
+	my $stream = $.mem-stream($input);
+	my $obj = self.new(:$stream);
+	$obj.predictor-filters( :$decode, |c );
+	$obj.convert;
+    }
+
+    method post-prediction( $input, |c ) {
+	$.prediction( $input, :decode, |c );
     }
 
 
