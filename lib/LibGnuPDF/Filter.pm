@@ -58,9 +58,7 @@ class LibGnuPDF::Filter {
     }
     
     multi method mem-stream( CArray $input) {
-	pdf-check(&pdf_stm_mem_new,
-		  $input, $input.elems,
-		  0, PDF_STM_READ);
+	pdf-check(&pdf_stm_mem_new, $input, $input.elems, 0, PDF_STM_READ);
     }
 
     # object may have an array of filters PDF 1.7 spec Table 3.4 
@@ -99,8 +97,14 @@ class LibGnuPDF::Filter {
 	}
 	my @filters;
 	@filters.push: { :$filter, };
-	@filters.push: $.predictor-filter( :$decode, |%($dict<DecodeParms>) )
-	    if $spec<predictors> && $dict<DecodeParms>;
+	if $dict<DecodeParms> {
+	    if $spec<predictors> {
+		@filters.push: $.predictor-filter( :$decode, |%($dict<DecodeParms>) )
+	    }
+	    else {
+		@filters[0]<params> = to-pdf-hash( $dict<DecodeParms> );
+	    }
+	}
 	@filters;
     }
 
@@ -144,12 +148,14 @@ class LibGnuPDF::Filter {
 		  Bool :$decode!,
 		  Array :$filters = $.filters(:$dict, :$decode) ) {
 	my $buf = $input;
-	my @keys = $decode ?? $filters.keys.list !! $filters.keys.reverse.list;
-	for @keys {
+	my @filter-seq = $decode ?? $filters.keys.list !! $filters.keys.reverse.list;
+	for @filter-seq {
 	    my $spec = $filters[$_];
 	    my $stream = $.mem-stream($buf);
 	    pdf-check(&pdf_stm_install_filter, $stream, $spec<filter>, $spec<params> // pdf_hash_t);
 	    $buf = $.filter($stream);
+	    $spec<params>.destroy
+	        if $spec<params>;
 	    $stream.destroy;
 	}
 	$buf;
