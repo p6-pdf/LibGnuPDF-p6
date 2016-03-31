@@ -37,7 +37,7 @@ is-deeply LibGnuPDF::Filter.post-prediction( $prediction-in,
     "NOOP predictive filter sanity";
 
 my $tiff-in = buf8.new: $prediction-in.head(24);
-warn :$tiff-in.perl;
+$tiff-in.list;
 is-deeply LibGnuPDF::Filter.post-prediction( $tiff-in,
                                              :Columns(4),
                                              :Colors(3),
@@ -60,12 +60,10 @@ my $rand-data = buf8.new: [
 
 for None => 1, TIFF => 2, PNG => 10 {
     my ($desc, $Predictor) = .kv;
-warn $rand-data.perl;
+
     my $prediction = LibGnuPDF::Filter.prediction( $rand-data,
                                                    :Columns(4),
                                                    :$Predictor, );
-
-    warn { :$Predictor, :$prediction }.perl;
 
     my $post-prediction = LibGnuPDF::Filter.post-prediction( $prediction,
                                                              :Columns(4),
@@ -77,6 +75,7 @@ warn $rand-data.perl;
 						     :Columns(4),
 						     :Colors(2),
 						     :$Predictor, );
+    $prediction2c.list;
     
     my $post-prediction2c = LibGnuPDF::Filter.post-prediction( $prediction2c,
 							       :Columns(4),
