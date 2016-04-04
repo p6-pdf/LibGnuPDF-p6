@@ -165,6 +165,7 @@ module LibGnuPDF {
         returns pdf_bool_t
         is export(:subs, :DEFAULT)
         is native(&find-lib) { * }
+
 }
 
 

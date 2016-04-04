@@ -30,9 +30,10 @@ $dict = { :Filter<ASCII85Decode LZWDecode>, };
 $encoded = %ast<ind-obj>[2]<stream><encoded>;
 
 lives-ok { $decoded = LibGnuPDF::Filter.decode( $encoded, :$dict ) }, 'basic content decode - lives';
+warn $decoded.decode('latin-1');
 
 my $encoded2;
-lives-ok { $encoded2 = LibGnuPDF::Filter.encode( $decoded, :$dict ) }, 'basic content decode - lives';
+lives-ok { $encoded2 = LibGnuPDF::Filter.encode( $decoded, :$dict ) }, 'basic content encode - lives';
 
 my $decoded2;
 lives-ok { $decoded2 = LibGnuPDF::Filter.decode( $encoded2, :$dict ) }, 'basic content decode - lives';

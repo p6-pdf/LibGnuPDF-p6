@@ -8,6 +8,10 @@ class LibGnuPDF::Filter {
 
     has pdf_stm_t $.stream is required;
 
+    method ping returns Bool {
+	 ? pdf_stm_supported_filter_p(PDF_STM_FILTER_NULL);
+    }
+
     method filter-spec( Str $filter-name is copy ) {
 
         constant %Filters = %(
@@ -54,10 +58,11 @@ class LibGnuPDF::Filter {
     }
 
     multi method mem-stream(Blob $input) {
-	$.mem-stream( CArray[pdf_uchar_t].new( $input ));
+	my $c-array = CArray[pdf_uchar_t].new($input);
+	$.mem-stream( $c-array );
     }
     
-    multi method mem-stream( CArray $input) {
+    multi method mem-stream(CArray $input) is default {
 	pdf-check(&pdf_stm_mem_new, $input, $input.elems, 0, PDF_STM_READ);
     }
 
