@@ -1,6 +1,6 @@
 use Test;
 
-plan 6;
+plan 2;
 
 use LibGnuPDF::Filter;
 
@@ -20,25 +20,4 @@ ok $encoded.elems < $text.chars, "text was compressed"
     or diag "plain-text:{$text.codes} bytes,  encoded:{$encoded.codes} bytes";
 my $decoded = LibGnuPDF::Filter.decode( $encoded, :$dict );
 is $decoded.decode("latin-1"), $text, "encode/decode round-trip";
-
-my $input = 't/pdf/ind-obj-A85+LZW.in'.IO.slurp( :enc<latin-1> );
-PDF::Grammar::PDF.parse($input, :$actions, :rule<ind-obj>)
-    // die "parse failed";
-my %ast = $/.ast;
-
-$dict = { :Filter<ASCII85Decode LZWDecode>, };
-$encoded = %ast<ind-obj>[2]<stream><encoded>;
-
-lives-ok { $decoded = LibGnuPDF::Filter.decode( $encoded, :$dict ) }, 'basic content decode - lives';
-warn $decoded.decode('latin-1');
-
-my $encoded2;
-lives-ok { $encoded2 = LibGnuPDF::Filter.encode( $decoded, :$dict ) }, 'basic content encode - lives';
-
-my $decoded2;
-lives-ok { $decoded2 = LibGnuPDF::Filter.decode( $encoded2, :$dict ) }, 'basic content decode - lives';
-
-todo "issue #2";
-is-deeply $decoded2, $decoded,
-    q{basic LZW decompression - round trip};
 

@@ -137,7 +137,7 @@ class LibGnuPDF::Filter {
     method filter($stream) {
 	my buf8 $out .= new;
 	my $buf = CArray[pdf_uchar_t].new;
-        $buf[1024] = 0;
+        $buf[16384] = 0;
 	my $bytes = CArray[pdf_size_t].new;
 	$bytes[0] = 0;
 	my pdf_bool_t $more = 1;
