@@ -137,7 +137,7 @@ class LibGnuPDF::Filter {
     method filter($stream) {
 	my buf8 $out .= new;
 	my $buf = CArray[pdf_uchar_t].new;
-        $buf[16384] = 0;
+        $buf[8192] = 0;
 	my $bytes = CArray[pdf_size_t].new;
 	$bytes[0] = 0;
 	my pdf_bool_t $more = 1;
@@ -149,9 +149,9 @@ class LibGnuPDF::Filter {
 	$out;
     }
 
-    method !transcode($input!, :$dict,
-		  Bool :$decode!,
-		  Array :$filters = $.filters(:$dict, :$decode) ) {
+    method transcode($input!, :$dict,
+		     Bool :$decode!,
+		     Array :$filters = $.filters(:$dict, :$decode) ) {
 	my $buf = $input;
 	my @filter-seq = $decode ?? $filters.keys.list !! $filters.keys.reverse.list;
 	for @filter-seq {
@@ -167,21 +167,11 @@ class LibGnuPDF::Filter {
     }
 
     method decode($input!, :$dict!) {
-	self!transcode($input, :$dict, :decode);
+	$.transcode($input, :$dict, :decode);
     }
 
     method encode($input!, :$dict!) {
-	self!transcode($input, :$dict, :!decode);
+	$.transcode($input, :$dict, :!decode);
     }
-
-    method prediction( $input, Bool :$decode = False, |c ) {
-	my @filters = ($.predictor-filter( :$decode, |c ), );
-	self!transcode($input, :$decode, :@filters);
-    }
-
-    method post-prediction( $input, |c ) {
-	$.prediction( $input, :decode, |c );
-    }
-
 
 }

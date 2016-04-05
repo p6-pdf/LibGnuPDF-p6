@@ -28,26 +28,37 @@ my $png-post-prediction = buf8.new: [
     1,   2,   3,    4,
     ];
 
+class Filter is LibGnuPDF::Filter {
+    method prediction( $input, Bool :$decode = False, |c ) {
+       my @filters = ($.predictor-filter( :$decode, |c ), );
+       self.transcode($input, :$decode, :@filters);
+    }
+
+    method post-prediction( $input, |c ) {
+       $.prediction( $input, :decode, |c );
+    }
+}
+
 $prediction-in.list;
-is-deeply LibGnuPDF::Filter.post-prediction( $prediction-in,
-                                             :Columns(4),
-                                             :Colors(3),
-                                             :Predictor(1), ),
+is-deeply Filter.post-prediction( $prediction-in,
+                                  :Columns(4),
+                                  :Colors(3),
+                                  :Predictor(1), ),
     $prediction-in,
     "NOOP predictive filter sanity";
 
 my $tiff-in = buf8.new: $prediction-in.head(24);
 $tiff-in.list;
-is-deeply LibGnuPDF::Filter.post-prediction( $tiff-in,
-                                             :Columns(4),
-                                             :Colors(3),
-                                             :Predictor(2), ),
+is-deeply Filter.post-prediction( $tiff-in,
+                                  :Columns(4),
+                                  :Colors(3),
+                                  :Predictor(2), ),
     $tiff-post-prediction,
     "TIFF predictive filter sanity";
 
-is-deeply LibGnuPDF::Filter.post-prediction( $prediction-in,
-                                             :Columns(4),
-                                             :Predictor(12), ),
+is-deeply Filter.post-prediction( $prediction-in,
+                                  :Columns(4),
+                                  :Predictor(12), ),
     $png-post-prediction,
     "PNG predictive filter sanity";
 
@@ -61,26 +72,26 @@ my $rand-data = buf8.new: [
 for None => 1, TIFF => 2, PNG => 10 {
     my ($desc, $Predictor) = .kv;
 
-    my $prediction = LibGnuPDF::Filter.prediction( $rand-data,
-                                                   :Columns(4),
-                                                   :$Predictor, );
+    my $prediction = Filter.prediction( $rand-data,
+                                        :Columns(4),
+                                        :$Predictor, );
 
-    my $post-prediction = LibGnuPDF::Filter.post-prediction( $prediction,
-                                                             :Columns(4),
-                                                             :$Predictor, );
+    my $post-prediction = Filter.post-prediction( $prediction,
+                                                  :Columns(4),
+                                                  :$Predictor, );
 
     is-deeply $post-prediction, $rand-data, "$desc predictor ($Predictor) - appears lossless";
 
-    my $prediction2c = LibGnuPDF::Filter.prediction( $rand-data,
-						     :Columns(4),
-						     :Colors(2),
-						     :$Predictor, );
+    my $prediction2c = Filter.prediction( $rand-data,
+					  :Columns(4),
+					  :Colors(2),
+					  :$Predictor, );
     $prediction2c.list;
     
-    my $post-prediction2c = LibGnuPDF::Filter.post-prediction( $prediction2c,
-							       :Columns(4),
-							       :Colors(2),
-							       :$Predictor, );
+    my $post-prediction2c = Filter.post-prediction( $prediction2c,
+						    :Columns(4),
+						    :Colors(2),
+						    :$Predictor, );
     
     is-deeply $post-prediction2c, $rand-data, "$desc predictor ($Predictor) multi-channel - appears lossless";
 }

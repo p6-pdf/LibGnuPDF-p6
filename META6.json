@@ -2,7 +2,7 @@
     "name"        : "LibGnuPDF",
     "version"     : "0.0.1",
     "description" : "Perl6 Bindings to the GnuPDF library",
-    "depends"     : [ ],
+    "depends"     : [ "PDF::Grammar" ],
     "source-url"  : "git://github.com/p6-pdf/perl6-LibGnuPDF.git",
     "provides"    : {
         "LibGnuPDF" : "lib/LibGnuPDF.pm",

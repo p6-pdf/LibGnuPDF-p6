@@ -6,8 +6,6 @@ use LibGnuPDF::Filter;
 
 use PDF::Grammar::PDF;
 use PDF::Grammar::PDF::Actions;
-use PDF::Storage::Input;
-use PDF::Storage::IndObj;
 
 my $actions = PDF::Grammar::PDF::Actions.new;
 
