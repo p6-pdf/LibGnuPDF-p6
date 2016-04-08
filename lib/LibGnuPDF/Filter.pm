@@ -159,9 +159,6 @@ class LibGnuPDF::Filter {
 	    my $stream = $.mem-stream($buf);
 	    pdf-check(&pdf_stm_install_filter, $stream, $spec<filter>, $spec<params> // pdf_hash_t);
 	    $buf = $.filter($stream);
-	    $spec<params>.destroy
-	        if $spec<params>;
-	    $stream.destroy;
 	}
 	$buf;
     }

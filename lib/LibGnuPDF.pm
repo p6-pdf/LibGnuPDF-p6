@@ -16,7 +16,7 @@ module LibGnuPDF {
     }
 
     my role PdfAlloced[&destroy-sub] {
-	submethod destroy {
+	submethod DESTROY {
 	    &destroy-sub(self);
 	}
     }

@@ -38,8 +38,6 @@ pdf-check(&pdf_stm_read, $dec-stm, $buf-dec, $buf-dec.elems-1, $bytes);
 my Str $decoded = buf8.new( $buf-dec.head($bytes[0]) ).decode("latin-1");
 is $decoded, "hello world!", 'decoded';
 
-.destroy
-    for $dec-stm, $enc-stm;
 done-testing;
 
 
